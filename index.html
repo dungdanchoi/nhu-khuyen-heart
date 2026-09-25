@@ -16,6 +16,48 @@
             font-family: 'Segoe UI', Arial, sans-serif;
             color: #fff;
         }
+
+        /* Màn hình mở quà (Overlay) */
+        #startOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, #1a001a 0%, #050505 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        .gift-icon {
+            font-size: 70px;
+            animation: pulse 1.5s infinite ease-in-out;
+            margin-bottom: 20px;
+        }
+        .start-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffb6c1;
+            text-shadow: 0 0 10px #ff69b4;
+            text-align: center;
+            padding: 0 20px;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         canvas {
             display: block;
             position: absolute;
@@ -35,18 +77,12 @@
             text-shadow: 0 0 10px #ff69b4, 0 0 20px #ff1493;
         }
 
-        /* Khung điều khiển nhạc */
-        .controls {
+        /* Nút Bật/Tắt Nhạc */
+        .music-btn {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 100;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .music-btn, .upload-label {
             width: 44px;
             height: 44px;
             border-radius: 50%;
@@ -62,17 +98,10 @@
             align-items: center;
             justify-content: center;
         }
-
         .music-btn.playing {
             animation: rotate 4s linear infinite;
             background: rgba(255, 20, 147, 0.6);
-            box-shadow: 0 0 18px rgba(255, 20, 147, 0.9);
         }
-
-        #fileInput {
-            display: none;
-        }
-
         @keyframes rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -80,18 +109,19 @@
     </style>
 </head>
 <body>
+
+    <!-- Màn hình chờ mở quà -->
+    <div id="startOverlay">
+        <div class="gift-icon">🎁</div>
+        <div class="start-text">Chạm vào màn hình để mở quà nhé em bé 🥰</div>
+    </div>
+
     <div class="header-title">Quà Trung thu cho em bé 🥰</div>
     
-    <div class="controls">
-        <!-- Nút chọn file nhạc từ máy -->
-        <label for="fileInput" class="upload-label" title="Tải bài hát từ máy">📂</label>
-        <input type="file" id="fileInput" accept="audio/*">
+    <!-- Nút Bật/Tắt Nhạc -->
+    <button id="musicBtn" class="music-btn">🎵</button>
 
-        <!-- Nút Bật/Tắt Nhạc -->
-        <button id="musicBtn" class="music-btn">🔇</button>
-    </div>
-    
-    <!-- Link MP3 trực tiếp từ CDN online chuẩn -->
+    <!-- Link nhạc trực tiếp từ Catbox -->
     <audio id="bgMusic" loop src="https://files.catbox.moe/epge5d.mp3"></audio>
 
     <canvas id="canvas"></canvas>
@@ -108,7 +138,6 @@
             height = canvas.height = window.innerHeight;
         });
 
-        // 📝 BẠN CÓ THỂ THAY ĐỔI CÁC CÂU CHÚC TẠI ĐÂY:
         const messages = [
             "Tòng Như Khuyên ❤️",
             "Chúc em Trung Thu vui vẻ và ấm áp 🥰",
@@ -117,14 +146,12 @@
             "Nơi nào đều có 2 ta ✨"
         ];
 
-        // Công thức hình trái tim
         function heartEquation(t) {
             const x = 16 * Math.pow(Math.sin(t), 3);
             const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
             return { x, y };
         }
 
-        // Hạt pháo hoa trái tim
         class HeartParticle {
             constructor() {
                 this.reset();
@@ -164,7 +191,6 @@
         const particleCount = width < 600 ? 350 : 600;
         const particles = Array.from({ length: particleCount }, () => new HeartParticle());
 
-        // Hiệu ứng chữ xoay 3D
         let angle = 0;
         function draw3DText() {
             angle += 0.008;
@@ -204,13 +230,28 @@
 
         animate();
 
-        // 🎵 Xử lý Bật/Tắt Nhạc
-        const musicBtn = document.getElementById('musicBtn');
+        // 🎵 Xử lý Tự Phát Nhạc khi chạm vào màn hình mở quà
+        const startOverlay = document.getElementById('startOverlay');
         const bgMusic = document.getElementById('bgMusic');
-        const fileInput = document.getElementById('fileInput');
+        const musicBtn = document.getElementById('musicBtn');
         let isPlaying = false;
 
-        function togglePlay() {
+        startOverlay.addEventListener('click', () => {
+            bgMusic.play().then(() => {
+                isPlaying = true;
+                musicBtn.classList.add('playing');
+                musicBtn.textContent = '🎵';
+            }).catch(err => {
+                console.log("Lỗi phát nhạc:", err);
+            });
+
+            // Ẩn màn hình mở quà
+            startOverlay.style.opacity = '0';
+            startOverlay.style.visibility = 'hidden';
+        });
+
+        // Nút bật/tắt nhạc thủ công
+        musicBtn.addEventListener('click', () => {
             if (isPlaying) {
                 bgMusic.pause();
                 musicBtn.textContent = '🔇';
@@ -221,31 +262,9 @@
                     musicBtn.textContent = '🎵';
                     musicBtn.classList.add('playing');
                     isPlaying = true;
-                }).catch(err => {
-                    alert('Chưa tải được nhạc. Bạn có thể nhấn vào nút biểu tượng Thư Mục 📂 góc trên bên phải để chọn nhạc trong máy!');
                 });
             }
-        }
-
-        musicBtn.addEventListener('click', togglePlay);
-
-        // Đổi nhạc khi chọn file từ máy
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const fileURL = URL.createObjectURL(file);
-                bgMusic.src = fileURL;
-                isPlaying = false;
-                togglePlay();
-            }
         });
-
-        // Tự động phát nhạc khi chạm nhẹ vào màn hình lần đầu
-        window.addEventListener('click', (e) => {
-            if (!isPlaying && e.target !== fileInput && e.target !== musicBtn) {
-                togglePlay();
-            }
-        }, { once: true });
     </script>
 </body>
 </html>
